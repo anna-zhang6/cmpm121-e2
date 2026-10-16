@@ -25,6 +25,9 @@ function getSnapshot(): ShieldSnapshot {
   return { charge: count, capacity: CAPACITY, missing: CAPACITY - count };
 }
 
+const SHIELD_CHANGE = "shieldchange";
+const shieldEvents = new EventTarget();
+
 function drawMeter(shield: ShieldSnapshot) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (let i = 0; i < shield.capacity; i++) {
@@ -33,9 +36,13 @@ function drawMeter(shield: ShieldSnapshot) {
   }
   ctx.fillStyle = "#233e43";
   ctx.font = "16px system-ui";
-  ctx.fillText(`${shield.charge} / 10 shield`, 12, 100);
-  readout.textContent = `Shield charge: ${shield.charge} / 10`;
+  ctx.fillText(`${shield.charge} / ${shield.capacity} shield`, 12, 100);
+  readout.textContent = `Shield charge: ${shield.charge} / ${shield.capacity}`;
 }
+
+shieldEvents.addEventListener(SHIELD_CHANGE, (event) => {
+  drawMeter((event as CustomEvent<ShieldSnapshot>).detail);
+});
 
 function updateStats() {
   panelUpdates++;
@@ -53,7 +60,9 @@ function setCount(next: number) {
   const bounded = Math.max(0, Math.min(CAPACITY, next));
   if (bounded === count) return;
   count = bounded;
-  drawMeter(getSnapshot());
+  shieldEvents.dispatchEvent(
+    new CustomEvent<ShieldSnapshot>(SHIELD_CHANGE, { detail: getSnapshot() }),
+  );
   if (panel) updateStats();
 }
 
