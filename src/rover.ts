@@ -47,9 +47,45 @@ const rightCommand: Command = {
   },
 };
 
-function run(command: Command): void {
-  command.execute();
+const queue: Command[] = [];
+const queueList = document.querySelector<HTMLOListElement>("#rover-pending")!;
+const queueStatus = document.querySelector<HTMLParagraphElement>(
+  "#rover-queue-status",
+)!;
+const runButton = document.querySelector<HTMLButtonElement>("#rover-run")!;
+const clearButton = document.querySelector<HTMLButtonElement>("#rover-clear")!;
+
+function renderQueue(): void {
+  queueList.replaceChildren(
+    ...queue.map((command) => {
+      const item = document.createElement("li");
+      item.textContent = command.label;
+      return item;
+    }),
+  );
+  queueStatus.textContent = queue.length === 0
+    ? "Empty"
+    : `${queue.length} pending`;
+  runButton.disabled = queue.length === 0;
+  clearButton.disabled = queue.length === 0;
+}
+
+function enqueue(command: Command): void {
+  queue.push(command);
+  renderQueue();
+}
+
+function runQueue(): void {
+  for (const command of queue.splice(0)) {
+    command.execute();
+  }
+  renderQueue();
   drawRover();
+}
+
+function clearQueue(): void {
+  queue.length = 0;
+  renderQueue();
 }
 
 function drawRover() {
@@ -77,15 +113,19 @@ function drawRover() {
 }
 
 document.querySelector<HTMLButtonElement>("#rover-forward")!.onclick = () => {
-  run(forwardCommand);
+  enqueue(forwardCommand);
 };
 document.querySelector<HTMLButtonElement>("#rover-right")!.onclick = () => {
-  run(rightCommand);
+  enqueue(rightCommand);
 };
+runButton.onclick = runQueue;
+clearButton.onclick = clearQueue;
 document.querySelector<HTMLButtonElement>("#rover-reset")!.onclick = () => {
   x = 2;
   y = 2;
   direction = 0;
+  clearQueue();
   drawRover();
 };
+renderQueue();
 drawRover();
